@@ -1,0 +1,29 @@
+esphome:
+  name: myStrom-WiFi-Switch-Zero-example
+  friendly_name: myStrom_WiFi_Switch_Zero_example
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key_myStrom_WiFi_Switch_Zero_example
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+      
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "myStrom-WiFi-Switch-Zero-example"
+    password: !secret default_ap_password
+
+captive_portal:
+
+# ============================================================ 
+#               Package for device setup
+# ============================()============================== 
+packages:
+  device: !include Devices_basis/MyStrom_Wifi_Switch_Zero.yaml

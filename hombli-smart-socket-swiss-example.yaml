@@ -1,0 +1,36 @@
+esphome:
+  name: hombli-smart-socket-swiss-example
+  friendly_name: hombli_smart_socket_swiss_example
+
+# Calibrate value for an HBSS-3109 (don't forget to make your own calibration for each socket)
+substitutions:
+  voltage_divider: "790.0"
+  current_resistor: "0.0011"
+  current_multiply: "0.470"
+  update_interval_time: 15s
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key_hombli_smart_socket_swiss_example
+
+ota:
+  platform: esphome
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "hombli-smart-socket-swiss-example"
+    password: !secret default_ap_password
+    
+captive_portal:
+
+# ============================================================ 
+#               Package for device setup
+# ============================()============================== 
+packages:
+  device: !include Devices_basis/Hombli_HBSS-3109.yaml

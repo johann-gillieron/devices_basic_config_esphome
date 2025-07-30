@@ -1,0 +1,52 @@
+esphome:
+  name: JC2432W328C-example
+  friendly_name: JC2432W328C_example
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key_JC2432W328C_example
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "JC2432W328C-example"
+    password: !secret default_ap_password
+
+captive_portal:
+  
+
+# ============================================================ 
+#               Package for device hardware setup
+# ============================()==============================  
+packages:
+  device: !include Devices_basis/ESP32-JC2432W328C.yaml
+
+# ============================================================ 
+#               Home Assistant Sensor related setup
+# ============================()==============================
+# if you need sensors datas from Home Assistant
+
+# ============================================================ 
+#               LGVL Display related setup
+# ============================()=============================== 
+lvgl:
+  displays:
+    - main_display
+  touchscreens:
+    - main_touchscreen
+    
+  widgets:
+    - label:
+        align: CENTER
+        text: 'Hello World!'

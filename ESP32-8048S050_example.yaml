@@ -1,0 +1,62 @@
+esphome:
+  name: ESP32-8048S050-example
+  friendly_name: ESP32_8048S050_example
+  platformio_options:
+    board_build.flash_mode: dio
+  on_boot:
+    priority: 999.0
+    then:
+    - delay: 5s
+
+# Enable logging (force output on USB serial)
+logger:
+  level: DEBUG
+  hardware_uart: UART0
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key_ESP32_8048S050_example
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: none
+  enable_on_boot: True
+  output_power: 15.0
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "ESP32-8048S050-example"
+    password: !secret default_ap_password
+
+captive_portal:
+  
+# ============================================================ 
+#               Package for device hardware setup
+# ============================()==============================  
+packages:
+  device: !include Devices_basis/ESP32-8048S050.yaml
+
+# ============================================================ 
+#               Home Assistant Sensor related setup
+# ============================()==============================
+# if you need sensors datas from Home Assistant
+
+# ============================================================ 
+#               LGVL Display related setup
+# ============================()=============================== 
+lvgl:
+  displays:
+    - main_display
+  touchscreens:
+    - main_touchscreen
+    
+  widgets:
+    - label:
+        align: CENTER
+        text: 'Hello World!'
