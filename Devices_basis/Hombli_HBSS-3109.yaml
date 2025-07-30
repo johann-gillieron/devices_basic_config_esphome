@@ -1,0 +1,68 @@
+# Basic setup for a Hombli HBSS-3109 (Wifi Smart Socket)
+# platform
+bk72xx:
+  board: generic-bk7231t-qfn32-tuya
+
+# ============================================================ 
+#                  Hardware related setup                     
+# ============================()============================== 
+status_led:
+  pin:
+    number: P6
+    inverted: true
+
+binary_sensor:
+  - platform: gpio
+    id: binary_switch
+    pin:
+      number: P10
+      inverted: true
+      mode: INPUT_PULLUP
+    on_press:
+      then:
+        - switch.toggle: relay
+
+text_sensor:
+  - platform: libretiny
+    version:
+      name: LibreTiny Version
+
+switch:
+  - platform: gpio
+    restore_mode: RESTORE_DEFAULT_OFF
+    id: relay
+    name: "Socket"
+    pin: P26
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal strength
+
+  - platform: hlw8012
+    model: BL0937
+    cf_pin:
+      number: P7
+      inverted: true
+    cf1_pin:
+      number: P8
+      inverted: true
+    sel_pin:
+      number: P24
+      inverted: true
+    current:
+      name: Current
+      accuracy_decimals: 3
+      filters:
+        - multiply: ${current_multiply}
+    voltage:
+      name: Voltage
+      accuracy_decimals: 1
+    power:
+      name: Power
+      accuracy_decimals: 2
+    energy:
+      name: Energy
+    change_mode_every: 3
+    current_resistor: ${current_resistor}
+    voltage_divider: ${voltage_divider}
+    update_interval:  ${update_interval_time}

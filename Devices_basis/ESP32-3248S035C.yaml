@@ -1,0 +1,137 @@
+# Basic setup for a ESP32-3248S035C (CYD screen 3.5" with capacitive touch)
+# platform
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# ============================================================ 
+#                  Hardware related setup                     
+# ============================()============================== 
+output:
+  - platform: ledc
+    pin: GPIO27
+    id: gpio_backlight_pwm
+
+  - platform: ledc
+    pin: GPIO4
+    id: gpio_led_red
+    inverted: true
+
+  - platform: ledc
+    pin: GPIO16
+    id: gpio_led_green
+    inverted: true
+
+  - platform: ledc
+    pin: GPIO17
+    id: gpio_led_blue
+    inverted: true
+
+light:
+  - platform: monochromatic
+    id: backlight
+    output: gpio_backlight_pwm
+    name: '"Display Backlight"'
+    restore_mode: ALWAYS_ON
+    internal: True
+    on_turn_on:
+      then:
+        - light.turn_on:
+            id: backlight
+            brightness: 100%
+
+  - platform: rgb
+    name: "Front RGB LED"
+    id: front_led
+    restore_mode: ALWAYS_OFF
+    red: gpio_led_red
+    green: gpio_led_green
+    blue: gpio_led_blue
+    internal: True
+
+spi:
+  - id: bus_spi_display
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin: GPIO12
+
+display:
+  - platform: ili9xxx  
+    id: main_display
+    model: ST7796
+    spi_id: bus_spi_display
+    dc_pin: GPIO2
+    cs_pin: GPIO15
+    dimensions: 
+      width: 480
+      height: 320
+    data_rate: 80MHz
+    color_order: BGR
+    invert_colors: false
+    update_interval: never
+    auto_clear_enabled: false
+    show_test_card: false     
+    transform:
+      swap_xy: true 
+      mirror_y: false
+      mirror_x: false
+
+i2c:
+  id: bus_i2c_a
+  sda: 33
+  scl: 32
+  scan: true
+
+touchscreen:
+  - platform: gt911
+    id: main_touchscreen
+    display: main_display
+
+    i2c_id: bus_i2c_a
+    update_interval: 50ms
+    transform:
+      swap_xy: true
+      mirror_x: false
+      mirror_y: true
+
+    on_touch: 
+      - logger.log: "Touchscreen pressed"
+      - lambda: |-
+          ESP_LOGI("cal", "x=%d, y=%d, x_raw=%0d, y_raw=%d",
+            touch.x,
+            touch.y,
+            touch.x_raw,
+            touch.y_raw
+            );
+            
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal strength
+
+  - platform: adc
+    pin: GPIO34
+    name: "Backlight brightness"
+    id: LDR_value_CYD
+    unit_of_measurement: "%"
+    update_interval: 5s
+    internal: True
+    filters:
+      - calibrate_linear:
+         method: least_squares
+         datapoints:
+          # Map 0.075V (from sensor) to 100.0% (true value)
+          - 0.075 -> 100.0
+          # Map 1.0V (from sensor) to 0.0% (true value)
+          - 1.2 -> 0.0
+      - clamp:
+          min_value: 0.0
+          max_value: 100.0
+          ignore_out_of_range: False
+    on_value: 
+      then:
+        - light.control: 
+            id: backlight
+            brightness: !lambda |-
+              // output value must be in range 0 - 1.0
+              return id(LDR_value_CYD).state / 100.0;

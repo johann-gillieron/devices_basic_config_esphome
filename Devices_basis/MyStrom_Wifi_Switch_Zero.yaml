@@ -1,0 +1,67 @@
+# Basic setup for a MyStrom Wifi Switch Zero smart plug
+# platform
+esp8266:
+  board: esp_wroom_02
+  restore_from_flash: true
+
+# ============================================================ 
+#                  Hardware related setup                     
+# ============================()============================== 
+light:
+  - platform: status_led
+    name: "Socket state"
+    id: white_led
+    internal: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    pin: 
+      number: 14
+      inverted: true
+      
+  - platform: status_led
+    id: red_led
+    name: "Wifi state"
+    restore_mode: ALWAYS_ON
+    pin: 
+      number: 13
+      inverted: true
+    internal: true
+
+interval:
+  - interval: 10s
+    then:
+      if:
+        condition:
+          wifi.connected:
+        then:
+          - light.turn_off: red_led
+        else:
+          - light.turn_on: red_led
+    
+binary_sensor:
+  - platform: gpio
+    id: binary_switch
+    internal: true
+    pin:
+      number: 12
+      inverted: true
+      mode: INPUT_PULLUP
+    on_press:
+      then:
+        - switch.toggle: relay
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal strength
+
+switch:
+  - platform: gpio
+    id: relay
+    name: "Socket"
+    pin: 4
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_off: 
+      then:
+        - light.turn_off: white_led
+    on_turn_on: 
+      then:
+        - light.turn_on: white_led

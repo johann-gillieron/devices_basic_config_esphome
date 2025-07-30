@@ -1,0 +1,138 @@
+# Basic setup for a JC2432W328C (CYD screen 2.8" with capacitive touch)
+# platform
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# ============================================================ 
+#                  Hardware related setup                     
+# ============================()============================== 
+output:
+  - platform: ledc
+    pin: 27
+    id: gpio_backlight_pwm
+
+  - platform: ledc
+    pin: 4
+    id: gpio_led_red
+    inverted: true
+
+  - platform: ledc
+    pin: 16
+    id: gpio_led_green
+    inverted: true
+
+  - platform: ledc
+    pin: 17
+    id: gpio_led_blue
+    inverted: true
+
+light:
+  - platform: monochromatic
+    id: backlight
+    output: gpio_backlight_pwm
+    name: "Display Backlight"
+    restore_mode: ALWAYS_ON
+    internal: True
+    on_turn_on:
+      then:
+        - light.turn_on:
+            id: backlight
+            brightness: 100%
+
+  - platform: rgb
+    name: "Front RGB LED"
+    id: front_led
+    restore_mode: ALWAYS_OFF
+    red: gpio_led_red
+    green: gpio_led_green
+    blue: gpio_led_blue
+    internal: True
+
+spi:
+  - id: spi_tft
+    clk_pin: 14
+    mosi_pin: 13
+    miso_pin: 12
+
+display:
+  - id: main_display
+    platform: ili9xxx
+    model: ILI9341
+    spi_id: spi_tft
+    cs_pin: 15 
+    dc_pin: 2
+    dimensions: 
+      width: 320
+      height: 240
+    invert_colors: false
+    color_order: rgb 
+    update_interval: never
+    auto_clear_enabled: false
+    transform:
+      swap_xy: false 
+      mirror_y: false
+      mirror_x: true
+
+i2c:
+  id: bus_i2c_touchpanel
+  sda: 33
+  scl: 32
+
+touchscreen:
+  - platform: cst816
+    id: main_touchscreen
+    display: main_display
+    #interrupt_pin: 36
+    reset_pin: 25
+
+    i2c_id: bus_i2c_touchpanel
+    update_interval: 50ms
+    transform:
+      swap_xy: true
+      mirror_x: true
+      mirror_y: false
+
+    on_touch: 
+      - logger.log: "Touchscreen pressed"
+      - lambda: |-
+          ESP_LOGI("cal", "x=%d, y=%d, x_raw=%0d, y_raw=%d",
+            touch.x,
+            touch.y,
+            touch.x_raw,
+            touch.y_raw
+            );
+            
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal strength
+
+  - platform: adc
+    pin: GPIO34
+    name: "Backlight brightness"
+    id: LDR_value_CYD
+    internal: true
+    unit_of_measurement: "%"
+    update_interval: 5s
+    attenuation: 0db
+    internal: True
+    filters:
+      - calibrate_linear:
+         method: least_squares
+         datapoints:
+          # Map 0.075V (from sensor) to 100.0% (true value)
+          - 0.075 -> 100.0
+          # Map 1.051V (from sensor) to 15.0% (true value)
+          - 1.051 -> 15.0
+      - clamp:
+          min_value: 0.0
+          max_value: 100.0
+          ignore_out_of_range: False
+    on_value: 
+      then:
+        - light.control: 
+            id: backlight
+            brightness: !lambda |-
+              // output value must be in range 0 - 1.0
+              return id(LDR_value_CYD).state / 100.0;

@@ -1,0 +1,110 @@
+# Basic setup for a ESP32-8048S050 (CYD screen 5" with capacitive touch)
+# platform
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+# Required to achieve sufficient PSRAM bandwidth
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: y
+      CONFIG_ESP32S3_DATA_CACHE_64KB: y
+      CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
+      CONFIG_SPIRAM_RODATA: y
+
+# ============================================================ 
+#                  Hardware related setup                     
+# ============================()============================== 
+psram:
+  mode: octal
+  speed: 80MHz
+
+i2c:
+  id: bus_i2c
+  sda: 19
+  scl: 20
+  scan: true
+
+#spi:
+#  - id: spi_hw
+#    clk_pin: GPIO12
+#    mosi_pin: GPIO11
+#    miso_pin: GPIO13
+    
+#i2s_audio:
+#  i2s_lrclk_pin: GPIO18
+#  i2s_bclk_pin: GPIO0
+
+output:
+  - id: gpio_backlight_pwm
+    platform: ledc
+    pin: 2
+    frequency: 100Hz
+
+light:
+  - platform: monochromatic
+    id: backlight
+    name: '"Display Backlight"'
+    output: gpio_backlight_pwm
+    internal: True
+    restore_mode: ALWAYS_ON
+    on_turn_on:
+      then:
+        - light.turn_on:
+            id: backlight
+            brightness: 100%
+
+display:
+  - platform: rpi_dpi_rgb
+    id: main_display
+    dimensions:
+      width: 800
+      height: 480
+    #rotation: 90
+    color_order: RGB
+    update_interval: never
+    auto_clear_enabled: false
+    de_pin: 40
+    hsync_pin: 39
+    vsync_pin: 41
+    pclk_pin: 42
+    show_test_card: true
+    pclk_inverted: true
+    pclk_frequency: 16MHz
+    hsync_pulse_width: 4
+    hsync_front_porch: 8
+    hsync_back_porch: 8
+    vsync_pulse_width: 4
+    vsync_front_porch: 8
+    vsync_back_porch: 8
+    data_pins:
+      red: [45, 48, 47, 21, 14]
+      green: [5, 6, 7, 15, 16, 4]
+      blue: [8, 3, 46, 9, 1]
+    
+touchscreen:
+  - platform: gt911
+    id: main_touchscreen
+    display: main_display
+    i2c_id: bus_i2c
+    #address: 0x5D
+    update_interval: 50ms
+    transform:
+      swap_xy: false
+      mirror_x: false
+      mirror_y: False
+
+    on_touch: 
+      - logger.log: "Touchscreen pressed"
+      - lambda: |-
+          ESP_LOGI("cal", "x=%d, y=%d, x_raw=%0d, y_raw=%d",
+            touch.x,
+            touch.y,
+            touch.x_raw,
+            touch.y_raw
+            );
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal strength
